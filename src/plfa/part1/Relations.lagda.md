@@ -362,7 +362,9 @@ The above proof omits cases where one argument is `z≤n` and one
 argument is `s≤s`.  Why is it ok to omit them?
 
 ```agda
--- Your code goes here
+-- if one arguemnt is z≤n and another one is s≤s then its mean that one of them is zero and another one is (suc x)
+-- hence both of them can not be greather then another at same time 
+-- agda autoamatically finds such contradictions when see that such objects can not be constructed 
 ```
 
 
@@ -552,7 +554,16 @@ transitivity proves `m + p ≤ n + q`, as was to be shown.
 Show that multiplication is monotonic with regard to inequality.
 
 ```agda
--- Your code goes here
+open import Data.Nat using (_*_)
+*-mono-≤ : ∀ (m n p q : ℕ)
+  → m ≤ n
+  → p ≤ q
+    -------------
+  → m * p ≤ n * q
+-- "m≤n" is name of statement
+*-mono-≤ m n p q z≤n p≤q = z≤n
+*-mono-≤ m n p q (s≤s m≤n) p≤q = +-mono-≤ p q _ _ p≤q (*-mono-≤ _ _ _ _ m≤n p≤q)
+-- first I have filled hole by "+-mono-≤ p q _ _ p≤q ?" and then continued to fill remaining hole
 ```
 
 
@@ -600,7 +611,20 @@ Show that strict inequality is transitive. Use a direct proof. (A later
 exercise exploits the relation between < and ≤.)
 
 ```agda
--- Your code goes here
+<-trans : ∀ (m n p : ℕ)
+  → m < n
+  → n < p
+    -----
+  → m < p
+-- this two proofs  but termination checker fails
+-- <-trans m n (suc p) z<s n<p = z<s
+-- <-trans m n p (s<s m<n) n<p = <-trans _ n _ ? n<p
+
+-- <-trans zero (suc n) (suc p) m<n n<p = z<s
+-- <-trans (suc m) (suc n) (suc p) m<n n<p = <-trans _ _ _ m<n n<p
+
+<-trans m n p z<s (s<s n<p) = z<s
+<-trans m n p (s<s m<n) (s<s n<p) = s<s (<-trans _ _ _ m<n n<p)
 ```
 
 #### Exercise `trichotomy` (practice) {#trichotomy}
@@ -618,7 +642,38 @@ similar to that used for totality.
 [negation](/Negation/).)
 
 ```agda
--- Your code goes here
+data Trichotomy : ℕ → ℕ → Set where
+  tri_lt : ∀ {m n : ℕ}
+    → m < n
+    → Trichotomy m n
+  tri_eq : ∀ {m n : ℕ}
+    → m ≡ n
+    → Trichotomy m n
+  tri_gt : ∀ {m n : ℕ}
+    → n < m
+    → Trichotomy m n
+
+trichotomy-suc : ∀ (m n : ℕ) → Trichotomy m n → Trichotomy (suc m) (suc n)
+trichotomy-suc m n tri rel lt = tri_lt (s<s rel)
+trichotomy-suc m n tri rel eq = tri_eq (cong suc rel)
+trichotomy-suc m n tri rel gt = tri_gt (s<s rel)
+
+trichotomy : ∀ (m n : ℕ) → Trichotomy m n
+trichotomy zero zero = tri_eq refl
+trichotomy zero (suc n) = tri_lt z<s
+trichotomy (suc m) zero = tri_gt z<s
+trichotomy (suc m) (suc n) = trichotomy-suc _ _ (trichotomy _ _)
+
+-- same but using where
+trichotomy' : ∀ (m n : ℕ) → Trichotomy m n
+trichotomy' zero zero = tri_eq refl
+trichotomy' zero (suc n) = tri_lt z<s
+trichotomy' (suc m) zero = tri_gt z<s
+trichotomy' (suc m) (suc n) = trichotomy-suc' _ _ (trichotomy' _ _)
+    where trichotomy-suc' : ∀ (m n : ℕ) → Trichotomy m n → Trichotomy (suc m) (suc n)
+          trichotomy-suc' m n tri rel lt = tri_lt (s<s rel)
+          trichotomy-suc' m n tri rel eq = tri_eq (cong suc rel)
+          trichotomy-suc' m n tri rel gt = tri_gt (s<s rel)
 ```
 
 #### Exercise `+-mono-<` (practice) {#plus-mono-less}
@@ -627,6 +682,7 @@ Show that addition is monotonic with respect to strict inequality.
 As with inequality, some additional definitions may be required.
 
 ```agda
+
 -- Your code goes here
 ```
 
@@ -635,7 +691,22 @@ As with inequality, some additional definitions may be required.
 Show that `suc m ≤ n` implies `m < n`, and conversely.
 
 ```agda
--- Your code goes here
+-- ≤→< : ∀ (m n : ℕ) → suc m ≤ n → m < n
+-- ≤→< m (suc n) m≤n = ≤→< m (suc n) m≤n
+
+-- ≤→< : ∀ (m n : ℕ) → suc m ≤ n → m < n
+-- ≤→< zero (suc n) m≤n = z<s
+-- ≤→< (suc m) n m≤n = ≤→< _ _ m≤n
+
+≤→< : ∀ (m n : ℕ) → suc m ≤ n → m < n
+≤→< zero n (s≤s m≤n) = z<s
+≤→< (suc m) n (s≤s m≤n) = s<s (≤→< _ _ m≤n)
+-- not fully know how to effectivelly find terminating proofs 
+-- but seems like we need to always try to transform so that goal can be reduced by at least one step
+-- and apply same theorem inductivelly only after that
+<→≤ : ∀ (m n : ℕ) → m < n → suc m ≤ n 
+<→≤ m n z<s = s≤s z≤n
+<→≤ m n (s<s m≤n) = s≤s (<→≤ _ _ m≤n)
 ```
 
 #### Exercise `<-trans-revisited` (practice) {#less-trans-revisited}
@@ -645,7 +716,18 @@ using the relation between strict inequality and inequality and
 the fact that inequality is transitive.
 
 ```agda
--- Your code goes here
+
+suc-≤→≤ : ∀ (m n : ℕ) → suc m ≤ n → m ≤ n 
+suc-≤→≤ zero n (s≤s sm≤n) = z≤n
+suc-≤→≤ (suc m) n (s≤s sm≤n) = s≤s (suc-≤→≤ _ _ sm≤n)
+
+<-trans-revisited : ∀ (m n p : ℕ)
+  → m < n
+  → n < p
+    -----
+  → m < p
+-- <-trans-revisited m n p m<n n<p = ≤→< _ _ ( ≤-trans (<→≤ _ _ m<n) (<→≤ _ _ n<p) )
+<-trans-revisited m n p m<n n<p = ≤→< _ _ (≤-trans (<→≤ _ _ m<n) (suc-≤→≤ _ _ (<→≤ _ _ n<p)))
 ```
 
 
@@ -752,7 +834,24 @@ successor of the sum of two even numbers, which is even.
 Show that the sum of two odd numbers is even.
 
 ```agda
--- Your code goes here
+o+o≡e : ∀ {m n : ℕ}
+  → odd m
+  → odd n
+    ------------
+  → even (m + n)
+
+-- o+e≡o : ∀ {m n : ℕ}
+--   → odd m
+--   → even n
+--     -----------
+--   → odd (m + n)
+
+-- o+o≡e (suc x) en = suc (helper _ _ (o+e≡o en x)) 
+--   where helper : ∀ (m n : ℕ) → odd (m + n) → odd (n + m)
+--         helper m n o rewrite +-comm m n = o
+
+o+o≡e {suc m} {n} (suc x) en rewrite +-comm m n = suc (o+e≡o en x)
+
 ```
 
 #### Exercise `Bin-predicates` (stretch) {#Bin-predicates}
@@ -812,6 +911,65 @@ properties of `One`. It may also help to prove the following:
     to (2 * n) ≡ (to n) O
 
 ```agda
+-- assuming that canonical forms are "⟨⟩ O" "⟨⟩ I" "⟨⟩ I O" "⟨⟩ I I" "⟨⟩ I O O"
+data Bin : Set where
+  ⟨⟩ : Bin
+  _O : Bin → Bin
+  _I : Bin → Bin
+
+inc : Bin → Bin
+inc ⟨⟩ = ⟨⟩ I
+inc (a O) = (a I)
+inc (a I) = ((inc a) O ) 
+
+to : ℕ → Bin
+to zero = ⟨⟩ O
+to (suc zero) = ⟨⟩ I
+to (suc (suc n)) = inc (to (suc n)) 
+
+from : Bin → ℕ
+from ⟨⟩ = zero
+from (a O) = (from a) * 2
+from (a I) = (from a) * 2 + 1 
+
+
+  
+-- data One : Bin → Set where
+--   one : ∀ {b : Bin} → One (_I b)
+data One : Bin → Set where
+  one : One (⟨⟩ I)
+  one-1 : ∀ {b : Bin} → One b → One (b I)
+  one-0 : ∀ {b : Bin} → One b → One (b O)
+
+data Can : Bin → Set where
+  can-1 : ∀ {b : Bin} → One b → Can b
+  can-0 : Can (⟨⟩ O)
+
+one-inc-b : ∀ {b : Bin}
+    → One b
+    ------------
+    → One (inc b)
+one-inc-b {b O} (one-0 o) = one-1 o
+one-inc-b {b I} one = one-0 one
+one-inc-b {b I} (one-1 o) = one-0 (one-inc-b o)
+
+to-suc-n=inc-to-n : ∀ (n : ℕ) → to (suc n) ≡ inc (to n)
+to-suc-n=inc-to-n zero = refl
+to-suc-n=inc-to-n (suc n) = refl
+
+can-inc-b : ∀ {b : Bin}
+    → Can b
+    ------------
+    → Can (inc b)
+can-inc-b (can-1 x) = can-1 (one-inc-b x)
+can-inc-b can-0 = can-1 one
+
+can-to : ∀ (n : ℕ) → Can (to n) 
+can-to zero = can-0
+can-to (suc zero) = can-1 one
+can-to (suc (suc n)) rewrite to-suc-n=inc-to-n n = can-inc-b (can-inc-b (can-to n))
+
+
 -- Your code goes here
 ```
 
@@ -841,3 +999,4 @@ This chapter uses the following unicode:
 
 The commands `\^l` and `\^r` give access to a variety of superscript
 leftward and rightward arrows in addition to superscript letters `l` and `r`.
+                             

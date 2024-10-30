@@ -890,7 +890,9 @@ just apply the previous results which show addition
 is associative and commutative.
 
 ```agda
--- Your code goes here
++-swap : ∀ (m n p : ℕ) → m + (n + p) ≡ n + (m + p)
++-swap zero n p = refl
++-swap (suc m) n p rewrite +-comm n (suc (m + p)) | +-assoc m p n | +-comm n p = refl
 ```
 
 
@@ -903,7 +905,9 @@ Show multiplication distributes over addition, that is,
 for all naturals `m`, `n`, and `p`.
 
 ```agda
--- Your code goes here
+*-distrib-+ : ∀ (m n p : ℕ) → (m + n) * p ≡ m * p + n * p
+*-distrib-+ 0 n p = refl
+*-distrib-+ (suc m) n p rewrite *-distrib-+ m n p | +-assoc p (m * p) (n * p) = refl
 ```
 
 
@@ -916,7 +920,9 @@ Show multiplication is associative, that is,
 for all naturals `m`, `n`, and `p`.
 
 ```agda
--- Your code goes here
+*-assoc : ∀ (m n p : ℕ) → (m * n) * p ≡ m * (n * p)
+*-assoc zero n p = refl
+*-assoc (suc m) n p rewrite *-distrib-+ n (m * n) p | *-assoc m n p = refl
 ```
 
 
@@ -930,7 +936,18 @@ for all naturals `m` and `n`.  As with commutativity of addition,
 you will need to formulate and prove suitable lemmas.
 
 ```agda
--- Your code goes here
+
+*-m-0 : ∀ (m : ℕ) → m * 0 ≡ 0 * m
+*-m-0 zero = refl
+*-m-0 (suc m) = *-m-0 m
+
+*-suc : ∀ (m n : ℕ) → n + n * m ≡ n * suc m
+*-suc m zero = refl
+*-suc m (suc n) rewrite sym (*-suc m n) | +-swap n m (n * m) = refl
+
+*-comm : ∀ (m n : ℕ) → m * n ≡ n * m
+*-comm zero n rewrite *-m-0 n = refl
+*-comm (suc m) n rewrite *-comm m n | *-suc m n = refl
 ```
 
 
@@ -943,7 +960,9 @@ Show
 for all naturals `n`. Did your proof require induction?
 
 ```agda
--- Your code goes here
+0∸n≡0 : ∀ (n : ℕ) → zero ∸ n ≡ zero
+0∸n≡0 zero = refl
+0∸n≡0 (suc n) = refl
 ```
 
 
@@ -956,7 +975,13 @@ Show that monus associates with addition, that is,
 for all naturals `m`, `n`, and `p`.
 
 ```agda
--- Your code goes here
+-- ∸-+-assoc : ∀ (m n p : ℕ) → m ∸ n ∸ p ≡ m ∸ (n + p)
+-- ∸-+-assoc zero n p rewrite 0∸n≡0 n | 0∸n≡0 p | 0∸n≡0 (n + p) = refl
+-- ∸-+-assoc (suc m) n p = {!   !}
+∸-+-assoc : ∀ (m n p : ℕ) → m ∸ n ∸ p ≡ m ∸ (n + p)
+∸-+-assoc m zero p = refl
+∸-+-assoc zero (suc n) p = 0∸n≡0 p
+∸-+-assoc (suc m) (suc n) p = ∸-+-assoc m n p
 ```
 
 
@@ -971,7 +996,26 @@ Show the following three laws
 for all `m`, `n`, and `p`.
 
 ```
--- Your code goes here
+^-distribˡ-+-* : ∀ (m n p : ℕ) → m ^ (n + p) ≡ (m ^ n) * (m ^ p)
+^-distribˡ-+-* m zero p = sym (+-identity′ _) 
+^-distribˡ-+-* m (suc n) p rewrite ^-distribˡ-+-* m n p = sym (*-assoc m _ _)
+
+^-distribʳ-* : ∀ (m n p : ℕ) → (m * n) ^ p ≡ (m ^ p) * (n ^ p)
+^-distribʳ-* m n zero = refl
+^-distribʳ-* m n (suc p) rewrite ^-distribʳ-* m n p 
+                              | *-assoc m n (m ^ p * n ^ p) 
+                              | *-comm n (m ^ p * n ^ p) 
+                              | *-assoc (m ^ p) (n ^ p) n 
+                              | sym (*-assoc m (m ^ p) (n ^ p * n)) 
+                              | *-comm (n ^ p) n = refl
+
+^1-n-eq-1 : ∀ (n : ℕ) → 1 ^ n ≡ 1
+^1-n-eq-1 zero = refl
+^1-n-eq-1 (suc n) rewrite ^1-n-eq-1 n = refl
+
+^-*-assoc : ∀ (m n p : ℕ) → (m ^ n) ^ p ≡ m ^ (n * p)
+^-*-assoc m zero p = ^1-n-eq-1 p
+^-*-assoc m (suc n) p rewrite ^-distribʳ-* m (m ^ n) p | ^-distribˡ-+-* m p (n * p) | ^-*-assoc m n p = refl
 ```
 
 
@@ -996,7 +1040,36 @@ over bitstrings:
 For each law: if it holds, prove; if not, give a counterexample.
 
 ```agda
--- Your code goes here
+data Bin : Set where
+  ⟨⟩ : Bin
+  _O : Bin → Bin
+  _I : Bin → Bin
+  
+inc : Bin → Bin
+inc ⟨⟩ = ⟨⟩ I
+inc (a O) = (a I)
+inc (a I) = ((inc a) O ) 
+
+to : ℕ → Bin
+to zero = ⟨⟩ 
+to (suc n) = inc (to n) 
+
+from : Bin → ℕ
+from ⟨⟩ = zero
+from (a O) = (from a) * 2
+from (a I) = (from a) * 2 + 1 
+
+form-inc-b-suc-from-b : ∀ (b : Bin) → from (inc b) ≡ suc (from b)
+form-inc-b-suc-from-b ⟨⟩ = refl
+form-inc-b-suc-from-b (b O) rewrite +-comm (from b * 2) 1 = refl
+form-inc-b-suc-from-b (b I) rewrite form-inc-b-suc-from-b b | +-comm (from b * 2) 1 = refl
+
+to-from-b-contr : to (from (⟨⟩ O)) ≡ ⟨⟩
+to-from-b-contr = refl
+
+from-to-n : ∀ (n : ℕ) → from (to n) ≡ n
+from-to-n zero = refl
+from-to-n (suc n) rewrite form-inc-b-suc-from-b (to n) | from-to-n n = refl
 ```
 
 
@@ -1021,3 +1094,4 @@ This chapter uses the following unicode:
 Similar to `\r`, the command `\^r` gives access to a variety of
 superscript rightward arrows, and also a superscript letter `r`.
 The command `\'` gives access to a range of primes (`′ ″ ‴ ⁗`).
+                                       
