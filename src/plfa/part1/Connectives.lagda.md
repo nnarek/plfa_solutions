@@ -240,7 +240,15 @@ Show that `A ⇔ B` as defined [earlier](/Isomorphism/#iff)
 is isomorphic to `(A → B) × (B → A)`.
 
 ```agda
--- Your code goes here
+open import plfa.part1.Isomorphism using (_⇔_; _≃_)
+-- TODO learn how to destrcut argument of lambda into record form as I do in case of proof for "to" and fofr "from"
+⇔≃× : ∀ {A B : Set} → (A ⇔ B) ≃ ((A → B) × (B → A))
+⇔≃× {A} {B} = record { 
+    to = λ (record { to = A→B ; from = B→A }) → ⟨ A→B , B→A ⟩ ; 
+    from = λ{ ⟨ a , b ⟩ → record { to = a ; from = b } }; 
+    from∘to = λ x → refl ; 
+    to∘from = λ y → refl }
+
 ```
 
 
@@ -457,7 +465,23 @@ commutative and associative _up to isomorphism_.
 Show sum is commutative up to isomorphism.
 
 ```agda
--- Your code goes here
+⊎-2-elim : ∀ {A B : Set} → (x : A ⊎ B) → case-⊎ inj₂ inj₁ (case-⊎ inj₂ inj₁ x) ≡ x
+⊎-2-elim {A} {B} (inj₁ x) = refl
+⊎-2-elim {A} {B} (inj₂ x) = refl
+
+⊎-comm : ∀ {A B : Set} → (A ⊎ B) ≃ (B ⊎ A)
+⊎-comm {A} {B} = record { 
+                  to = λ A⊎B → case-⊎ (λ a → inj₂ a) inj₁ A⊎B ; 
+                  from = case-⊎ inj₂ inj₁ ; 
+                  from∘to = ⊎-2-elim ; --"case-⊎ refl refl" proof does not work because we can not we can not proof C from A in this case becaquse A is not connected to x ; 
+                  to∘from = ⊎-2-elim }
+
+⊎-comm' : ∀ {A B : Set} → (A ⊎ B) ≃ (B ⊎ A)
+⊎-comm' {A} {B} = record { 
+                  to = case-⊎ inj₂ inj₁ ; 
+                  from = case-⊎ inj₂ inj₁ ; 
+                  from∘to = λ { (inj₁ x) → refl ; (inj₂ y) → refl } ;
+                  to∘from = λ { (inj₁ x) → refl ; (inj₂ y) → refl } }
 ```
 
 #### Exercise `⊎-assoc` (practice)
@@ -465,7 +489,18 @@ Show sum is commutative up to isomorphism.
 Show sum is associative up to isomorphism.
 
 ```agda
--- Your code goes here
+⊎-assoc : ∀ {A B C : Set} → (A ⊎ (B ⊎ C)) ≃ ((A ⊎ B) ⊎ C)
+⊎-assoc {A} {B} {C} = record { 
+                        to = case-⊎ (inj₁ ∘ inj₁) (case-⊎ (inj₁ ∘ inj₂) inj₂) ; 
+                        from = case-⊎ (case-⊎ inj₁ (inj₂ ∘ inj₁)) (inj₂ ∘ inj₂) ; 
+                        from∘to = λ { 
+                                  (inj₁ x) → refl ; 
+                                  (inj₂ (inj₁ x)) → refl ;
+                                  (inj₂ (inj₂ x)) → refl } ; 
+                        to∘from = λ {
+                                  (inj₁ (inj₁ x)) → refl ;
+                                  (inj₁ (inj₂ x)) → refl ;
+                                  (inj₂ x) → refl } }
 ```
 
 ## False is empty
@@ -531,7 +566,12 @@ is the identity of sums _up to isomorphism_.
 Show empty is the left identity of sums up to isomorphism.
 
 ```agda
--- Your code goes here
+⊥-identityˡ : ∀ {A : Set} → (⊥ ⊎ A) ≃ A
+⊥-identityˡ {A} = record { 
+      to = λ { (inj₁ ()) ; (inj₂ y) → y } ; 
+      from = inj₂ ;
+      from∘to = λ { (inj₁ ()) ; (inj₂ y) → refl } ; 
+      to∘from = λ y → refl }
 ```
 
 #### Exercise `⊥-identityʳ` (practice)
@@ -539,7 +579,12 @@ Show empty is the left identity of sums up to isomorphism.
 Show empty is the right identity of sums up to isomorphism.
 
 ```agda
--- Your code goes here
+⊥-identityʳ : ∀ {A : Set} → (A ⊎ ⊥) ≃ A
+⊥-identityʳ {A} = record { 
+      to = λ { (inj₁ y) → y ; (inj₂ ()) } ; 
+      from = inj₁ ;
+      from∘to = λ { (inj₁ y) → refl ; (inj₂ ()) } ; 
+      to∘from = λ y → refl }
 ```
 
 ## Implication is function {#implication}
@@ -767,7 +812,9 @@ This is called a _weak distributive law_. Give the corresponding
 distributive law, and explain how it relates to the weak version.
 
 ```agda
--- Your code goes here
+⊎-weak-×' : ∀ {A B C : Set} → (A ⊎ B) × C → A ⊎ (B × C)
+⊎-weak-×' ⟨ inj₁ x , proj₄ ⟩ = inj₁ x
+⊎-weak-×' ⟨ inj₂ x , proj₄ ⟩ = inj₂ ⟨ x , proj₄ ⟩ 
 ```
 
 
@@ -781,7 +828,9 @@ postulate
 Does the converse hold? If so, prove; if not, give a counterexample.
 
 ```agda
--- Your code goes here
+⊎×-implies-×⊎' : ∀ {A B C D : Set} → (A × B) ⊎ (C × D) → (A ⊎ C) × (B ⊎ D)
+⊎×-implies-×⊎' (inj₁ ⟨ proj₃ , proj₄ ⟩) = ⟨ inj₁ proj₃ , inj₁ proj₄ ⟩
+⊎×-implies-×⊎' (inj₂ ⟨ proj₃ , proj₄ ⟩) = ⟨ inj₂ proj₃ , inj₂ proj₄ ⟩
 ```
 
 
@@ -822,3 +871,4 @@ This chapter uses the following unicode:
 
 
 [^from-wadler-2015]: This paragraph was adopted from "Propositions as Types", Philip Wadler, _Communications of the ACM_, December 2015.
+         

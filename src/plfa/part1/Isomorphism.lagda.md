@@ -445,7 +445,12 @@ postulate
 ```
 
 ```agda
--- Your code goes here
+≃-implies-≲' : ∀ {A B : Set}
+  → A ≃ B
+    -----
+  → A ≲ B
+≃-implies-≲' {A} {B} record { to = to₁ ; from = from₁ ; from∘to = from∘to₁ ; to∘from = to∘from₁ } 
+                    = record { to = to₁ ; from = from₁ ; from∘to = from∘to₁ }
 ```
 
 #### Exercise `_⇔_` (practice) {#iff}
@@ -460,7 +465,21 @@ record _⇔_ (A B : Set) : Set where
 Show that equivalence is reflexive, symmetric, and transitive.
 
 ```agda
--- Your code goes here
+⇔-refl : ∀ {A : Set} → A ≲ A
+⇔-refl {A} = record { 
+                to = λ{x → x} ; 
+                from = λ{x → x} ; 
+                from∘to = λ x → refl }
+
+⇔-trans : ∀ {A B C : Set} → A ⇔ B → B ⇔ C → A ⇔ C
+⇔-trans record { to = to₁ ; from = from₁ } record { to = to₂ ; from = from₂ } 
+                        = record { to = λ x → to₂ (to₁ x) ; from = from₁ ∘ from₂ }
+
+⇔-sym : ∀ {A B : Set}
+  → A ⇔ B
+    -----
+  → B ⇔ A
+⇔-sym record { to = to₁ ; from = from₁ } = record { to = from₁ ; from = to₁ }
 ```
 
 #### Exercise `Bin-embedding` (stretch) {#Bin-embedding}
@@ -480,7 +499,39 @@ which satisfy the following property:
 
 Using the above, establish that there is an embedding of `ℕ` into `Bin`.
 ```agda
--- Your code goes here
+open import Data.Nat.Base using (_*_)
+--TODO try to import this definitions from plfa.part1.Induction
+data Bin : Set where
+  ⟨⟩ : Bin
+  _O : Bin → Bin
+  _I : Bin → Bin
+
+inc : Bin → Bin
+inc ⟨⟩ = ⟨⟩ I
+inc (a O) = (a I)
+inc (a I) = ((inc a) O ) 
+
+n-to-b : ℕ → Bin
+n-to-b zero = ⟨⟩ 
+n-to-b (suc n) = inc (n-to-b n) 
+
+b-from-n : Bin → ℕ
+b-from-n ⟨⟩ = zero
+b-from-n (a O) = (b-from-n a) * 2
+b-from-n (a I) = (b-from-n a) * 2 + 1 
+
+form-inc-b-suc-from-b : ∀ (b : Bin) → b-from-n (inc b) ≡ suc (b-from-n b)
+form-inc-b-suc-from-b ⟨⟩ = refl
+form-inc-b-suc-from-b (b O) rewrite +-comm (b-from-n b * 2) 1 = refl
+form-inc-b-suc-from-b (b I) rewrite form-inc-b-suc-from-b b | +-comm (b-from-n b * 2) 1 = refl
+
+from-to-n : ∀ (n : ℕ) → b-from-n (n-to-b n) ≡ n
+from-to-n zero = refl
+from-to-n (suc n) rewrite form-inc-b-suc-from-b (n-to-b n) | from-to-n n = refl
+
+ℕ-≲-Bin : ℕ ≲ Bin
+ℕ-≲-Bin = record { to = n-to-b ; from = b-from-n ; from∘to = from-to-n }
+
 ```
 
 Why do `to` and `from` not form an isomorphism?
@@ -506,3 +557,4 @@ This chapter uses the following unicode:
     ≃  U+2243  ASYMPTOTICALLY EQUAL TO (\~-)
     ≲  U+2272  LESS-THAN OR EQUIVALENT TO (\<~)
     ⇔  U+21D4  LEFT RIGHT DOUBLE ARROW (\<=>)
+    
