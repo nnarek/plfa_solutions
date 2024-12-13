@@ -191,7 +191,10 @@ Using negation, show that
 is irreflexive, that is, `n < n` holds for no `n`.
 
 ```agda
--- Your code goes here
+open import Data.Nat using (_<_)
+<-irreflexive : ∀ {n : ℕ} → ¬ (n < n)
+<-irreflexive {suc zero} (Data.Nat.s≤s ())
+<-irreflexive {suc (suc n)} (Data.Nat.s≤s (Data.Nat.s≤s x)) = <-irreflexive x 
 ```
 
 
@@ -209,7 +212,26 @@ Here "exactly one" means that not only one of the three must hold,
 but that when one holds the negation of the other two must also hold.
 
 ```agda
--- Your code goes here
+open import Data.Nat using (_>_; _≤_; s≤s; z≤n)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong)
+
+trichotomy : ∀ {n m : ℕ} → ((m < n) × ¬ (m ≡ n) × ¬ (m > n)) ⊎ (¬ (m < n) × (m ≡ n) × ¬ (m > n)) ⊎ (¬ (m < n) × ¬ (m ≡ n) × (m > n))
+trichotomy {zero} {zero} = inj₂ (inj₁ ⟨ (λ ()) , ⟨ refl , (λ ()) ⟩ ⟩)
+trichotomy {zero} {suc m} = inj₂ (inj₂ ⟨ (λ ()) , ⟨ (λ ()) , s≤s z≤n ⟩ ⟩)
+trichotomy {suc n} {zero} = inj₁ ⟨ s≤s z≤n , ⟨ (λ ()) , (λ ()) ⟩ ⟩
+trichotomy {suc n} {suc m} with trichotomy {n} {m}
+...    | inj₁        ⟨ m<n , ⟨ ¬m≡n , ¬m>n ⟩ ⟩ = inj₁ ⟨ 
+                                            s≤s m<n , ⟨ 
+                                            (λ{refl → ¬m≡n refl}) , 
+                                            (λ{(s≤s x) → ¬m>n x}) ⟩ ⟩
+...    | inj₂ (inj₁ ⟨ ¬m<n , ⟨ m≡n , ¬m>n ⟩ ⟩) = inj₂ (inj₁ ⟨ 
+                                            (λ{(s≤s x) → ¬m<n x}) , ⟨ 
+                                            cong suc m≡n , 
+                                            (λ{(s≤s x) → ¬m>n x}) ⟩ ⟩)
+...    | inj₂ (inj₂ ⟨ ¬m<n , ⟨ ¬m≡n , m>n ⟩ ⟩) = inj₂ (inj₂ ⟨ 
+                                            (λ{(s≤s x) → ¬m<n x}) , ⟨ 
+                                            (λ{refl → ¬m≡n refl}) , 
+                                            s≤s m>n ⟩ ⟩)
 ```
 
 #### Exercise `⊎-dual-×` (recommended)
@@ -222,7 +244,12 @@ version of De Morgan's Law.
 This result is an easy consequence of something we've proved previously.
 
 ```agda
--- Your code goes here
+⊎-dual-× : ∀ {A B : Set} → ¬ (A ⊎ B) ≃ (¬ A) × (¬ B)
+⊎-dual-× = record { 
+      to = λ A⊎B → ⟨ (contraposition inj₁ A⊎B) , (contraposition inj₂ A⊎B) ⟩ ; 
+      from = λ{ ⟨ ¬a , ¬b ⟩ → λ { (inj₁ a) → ¬a a ; (inj₂ b) → ¬b b } } ; 
+      from∘to = λ x → refl ; 
+      to∘from = λ y → refl }
 ```
 
 
@@ -232,6 +259,16 @@ Do we also have the following?
 
 If so, prove; if not, can you give a relation weaker than
 isomorphism that relates the two sides?
+
+```agda
+-- this one proves that (¬ A) ⊎ (¬ B) → ¬ (A × B) and we can not even prove eequivalence without using classical axioms
+-- ×-dual-⊎ : ∀ {A B : Set} → ¬ (A × B) ≃ (¬ A) ⊎ (¬ B)
+-- ×-dual-⊎ = record { to = λ{ x → {!   !}  } ; 
+--                     from = λ{ (inj₁ ¬A) ⟨ a , b ⟩ → ¬A a ; 
+--                               (inj₂ ¬B) ⟨ a , b ⟩ → ¬B b } ; 
+--                     from∘to = {!   !} ; 
+--                     to∘from = {!   !} }
+```
 
 
 ## Intuitive and Classical logic
@@ -379,7 +416,29 @@ Consider the following principles:
 Show that each of these implies all the others.
 
 ```agda
--- Your code goes here
+open import Function using (_∘_)
+open import Data.Sum using ([_,_])
+
+lem = ∀ (A : Set) → A ⊎ ¬ A
+¬¬-el = ∀ (A : Set) → ¬ ¬ A → A
+peirce = ∀ (A B : Set) → ((A → B) → A) → A
+A→B→¬A⊎B = ∀ (A B : Set) → (A → B) → ¬ A ⊎ B
+de-morgan = ∀ (A B : Set) → ¬ (¬ A × ¬ B) → A ⊎ B
+
+de-morgan→A→B→¬A⊎B : de-morgan → A→B→¬A⊎B
+de-morgan→A→B→¬A⊎B dm A B A→B = dm _ _ λ{ ⟨ ¬¬A , ¬B ⟩ → ¬¬A λ{ A → ¬B (A→B A) } }
+
+A→B→¬A⊎B→peirce : A→B→¬A⊎B → peirce
+A→B→¬A⊎B→peirce A→B→¬A⊎B' As Bs A→B→A =  [ (λ ¬A → A→B→A λ A → contradiction A ¬A) , (λ x → x ) ] (A→B→¬A⊎B' As As λ x → x)
+
+peirce→¬¬-el : peirce → ¬¬-el
+peirce→¬¬-el peirce A ¬¬A = peirce _ ⊥ λ x → contradiction x ¬¬A
+
+¬¬-el→lem : ¬¬-el → lem
+¬¬-el→lem ¬¬A→A A = ¬¬A→A _ em-irrefutable
+
+lem→de-morgan : lem → de-morgan
+lem→de-morgan lem A B ¬¬A×¬B = [ (λ x → x) , (λ ¬A⊎B → contradiction ⟨ (λ A → ¬A⊎B (inj₁ A)) , ¬A⊎B ∘ inj₂ ⟩ ¬¬A×¬B) ] (lem (A ⊎ B))
 ```
 
 
@@ -394,7 +453,8 @@ Show that any negated formula is stable, and that the conjunction
 of two stable formulas is stable.
 
 ```agda
--- Your code goes here
+¬-stable : ∀ (A : Set) → Stable (¬ A)
+¬-stable A ¬¬¬a a = ¬¬¬a λ ¬a → ¬a a
 ```
 
 ## Standard Prelude
@@ -413,3 +473,5 @@ This chapter uses the following unicode:
 
     ¬  U+00AC  NOT SIGN (\neg)
     ≢  U+2262  NOT IDENTICAL TO (\==n)
+    
+    
