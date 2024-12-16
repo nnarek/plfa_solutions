@@ -378,7 +378,90 @@ it to write out an alternative proof that addition is monotonic with
 regard to inequality.  Rewrite all of `+-monoˡ-≤`, `+-monoʳ-≤`, and `+-mono-≤`.
 
 ```agda
--- Your code goes here
+-- can not import plfa.part1.Relations because here we have own definition of equality 
+data _≤_ : ℕ → ℕ → Set where
+
+  z≤n : ∀ {n : ℕ}
+      --------
+    → zero ≤ n
+
+  s≤s : ∀ {m n : ℕ}
+    → m ≤ n
+      -------------
+    → suc m ≤ suc n
+
+infix 4 _≤_
+
+≤-trans : ∀ {m n p : ℕ}
+  → m ≤ n
+  → n ≤ p
+    -----
+  → m ≤ p
+≤-trans z≤n       _          =  z≤n
+≤-trans (s≤s m≤n) (s≤s n≤p)  =  s≤s (≤-trans m≤n n≤p)
+
+≡→≤ : ∀ {n m : ℕ}
+  → n ≡ m
+    -----
+  → n ≤ m
+≡→≤ {zero} {m} n=m = z≤n
+≡→≤ {suc n} {suc .n} refl = s≤s ( ≡→≤ refl )
+
+--added into notes detailed description about how reasoning of equality and inequality works
+module ≤-Reasoning where
+
+  infix  1 begin-≤_
+  infixr 2 step-≤-∣ step-≤-⟩
+  infix  3 _∎-≤ 
+
+  begin-≤_ : ∀ {x y : ℕ} → x ≤ y → x ≤ y
+  begin-≤ x≤y = x≤y
+
+  step-≤-∣ : ∀ (x : ℕ) {y : ℕ} → x ≤ y → x ≤ y
+  step-≤-∣ x x≤y  =  x≤y
+
+  step-≤-⟩ : ∀ (x : ℕ) {y z : ℕ} → y ≤ z → x ≤ y → x ≤ z
+  step-≤-⟩ x y≤z x≤y  =  ≤-trans x≤y y≤z
+
+  syntax step-≤-∣ x x≤y      =  x ≤⟨⟩ x≤y
+  syntax step-≤-⟩ x y≤z x≤y  =  x ≤⟨  x≤y ⟩ y≤z
+
+  _∎-≤ : ∀ (x : ℕ) → x ≤ x
+  zero ∎-≤ = z≤n
+  suc x ∎-≤ = s≤s (x ∎-≤)
+
+open ≤-Reasoning
+
+
++-monoʳ-≤ : ∀ (n p q : ℕ)
+  → p ≤ q
+    -------------
+  → n + p ≤ n + q
++-monoʳ-≤ zero p q p≤q = p≤q
++-monoʳ-≤ (suc n) p q p≤q = s≤s (+-monoʳ-≤ n p q p≤q)
+
+--can not do rewrite yet because we have user definied _≡_ here
++-monoˡ-≤ : ∀ (m n p : ℕ)
+  → m ≤ n
+    -------------
+  → m + p ≤ n + p
++-monoˡ-≤ m n p m≤n = 
+  begin-≤ 
+    m + p
+  ≤⟨ ≡→≤ ( +-comm m p ) ⟩
+    p + m
+  ≤⟨ +-monoʳ-≤ p m n m≤n ⟩
+    p + n
+  ≤⟨ ≡→≤ ( +-comm p n ) ⟩
+    n + p
+  ∎-≤ 
+
++-mono-≤ : ∀ (m n p q : ℕ)
+  → m ≤ n
+  → p ≤ q
+    -------------
+  → m + p ≤ n + q
++-mono-≤ m n p q m≤n p≤q = ≤-trans (+-monoˡ-≤ _ _ p m≤n) (+-monoʳ-≤ _ _ _ p≤q)
 ```
 
 
@@ -756,3 +839,4 @@ This chapter uses the following unicode:
     ₀  U+2080  SUBSCRIPT ZERO (\_0)
     ₁  U+2081  SUBSCRIPT ONE (\_1)
     ₂  U+2082  SUBSCRIPT TWO (\_2)
+ 
