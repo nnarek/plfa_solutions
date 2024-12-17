@@ -243,13 +243,27 @@ partial order but not a total order.
 Give an example of a preorder that is not a partial order.
 
 ```agda
--- Your code goes here
+-- first, i tried to imagine infinite matrix of bools which is true if relation holds
+-- reflexivity means that diagonal of matrix should be true
+-- any point x which is under diagonal and point y which above diagonal, if they both true and if we continue x to left and y to down then intersection point also should be true
+-- anti-symmetric means that after folding by diagonal there should true value which is overlapped with other true value except diagonal
+-- total means that one of each overlapped values should be true after folding matrix by diagonal
+
+
+-- so to not satisfy this antisymmetry property we need to have at least one pair a<>b so that R a b = R b a. for example relation which is always true
+
+data AlwaysHolds : ℕ → ℕ → Set where
+  constr : ∀ {n m : ℕ} → AlwaysHolds n m
 ```
 
 Give an example of a partial order that is not a total order.
 
 ```agda
--- Your code goes here
+
+-- equality is partial order but not total
+
+data Eq' : ℕ → ℕ → Set where
+  constr : ∀ {n : ℕ} → Eq' n n
 ```
 
 ## Reflexivity
@@ -683,7 +697,23 @@ As with inequality, some additional definitions may be required.
 
 ```agda
 
--- Your code goes here
+x<suc-x : ∀ {x : ℕ} → x < suc x 
+x<suc-x {zero} = z<s
+x<suc-x {suc x} = s<s x<suc-x 
+
+inv-< : ∀ {p q : ℕ} → suc p < suc q →  p < q
+inv-< {p} {q} (s<s spsq) = spsq
+
+--it will be more easy to prove this by using lemma where m=n and another one where p=q 
++-mono-< : ∀ (m n p q : ℕ)
+  → m < n
+  → p < q
+    -------------
+  → m + p < n + q
++-mono-< zero (suc _) zero q z<s p<q = z<s
++-mono-< zero (suc zero) (suc p) (suc q) z<s p<q = s<s (<-trans p q (suc q) (inv-< p<q) x<suc-x)
++-mono-< zero (suc (suc n)) (suc p) (suc q) z<s p<q = s<s ( +-mono-< zero (suc n) p (suc q) z<s (<-trans p q (suc q) (inv-< p<q) x<suc-x) )
++-mono-< m n p q (s<s m<n) p<q = s<s (+-mono-< _ _ _ _ m<n p<q)
 ```
 
 #### Exercise `≤→<, <→≤` (recommended) {#leq-iff-less}
@@ -911,6 +941,8 @@ properties of `One`. It may also help to prove the following:
     to (2 * n) ≡ (to n) O
 
 ```agda
+open import Data.Nat.Properties using (*-comm)
+
 -- assuming that canonical forms are "⟨⟩ O" "⟨⟩ I" "⟨⟩ I O" "⟨⟩ I I" "⟨⟩ I O O"
 data Bin : Set where
   ⟨⟩ : Bin
@@ -969,8 +1001,28 @@ can-to zero = can-0
 can-to (suc zero) = can-1 one
 can-to (suc (suc n)) rewrite to-suc-n=inc-to-n n = can-inc-b (can-inc-b (can-to n))
 
+to-n*2=to-n-O : ∀ (n : ℕ) → 1 ≤ n → to (n * 2) ≡ (to n) O
+to-n*2=to-n-O (suc zero) 1≤n = refl
+to-n*2=to-n-O (suc (suc n)) 1≤n rewrite to-n*2=to-n-O (suc n) (s≤s z≤n) = refl
 
--- Your code goes here
+one-b-1≤from-b : ∀ (b : Bin) → One b → 1 ≤ from b
+one-b-1≤from-b (b O) (one-0 ob) = *-mono-≤ 1 (from b) 1 2 (one-b-1≤from-b b ob) (s≤s z≤n) 
+one-b-1≤from-b (b I) ob rewrite +-comm (from b * 2) 1 = s≤s z≤n
+
+can-to-from : ∀ {b : Bin} → Can b → to (from b) ≡ b 
+can-to-from {⟨⟩} (can-1 ()) -- contradiction
+can-to-from {b O} (can-1 (one-0 x)) rewrite to-n*2=to-n-O (from b) (one-b-1≤from-b _ x) |  can-to-from { b = b } (can-1 x) = refl
+can-to-from {b O} can-0 = refl
+can-to-from {b I} (can-1 one) = refl
+can-to-from {b I} (can-1 (one-1 x)) rewrite +-comm ((from b) * 2) 1 | to-suc-n=inc-to-n ((from b) * 2) | to-n*2=to-n-O (from b) (one-b-1≤from-b _ x) | can-to-from { b = b } (can-1 x)  = refl
+
+-- TODO in my second attemp when I tried to destruct (from b) then I expect to see (from b = zero) and (from b = suc n) in the context
+-- can-to-from' : ∀ {b : Bin} → Can b → to (from b) ≡ b 
+-- can-to-from' {b} cb with (from b)
+-- can-to-from' {⟨⟩} cb | x = {!   !}
+-- can-to-from' {b O} cb | x = {!   !}
+-- can-to-from' {b I} cb | x = {!   !}
+
 ```
 
 ## Standard library
@@ -999,4 +1051,4 @@ This chapter uses the following unicode:
 
 The commands `\^l` and `\^r` give access to a variety of superscript
 leftward and rightward arrows in addition to superscript letters `l` and `r`.
-                             
+                              
