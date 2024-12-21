@@ -261,13 +261,23 @@ If so, prove; if not, can you give a relation weaker than
 isomorphism that relates the two sides?
 
 ```agda
--- this one proves that (¬ A) ⊎ (¬ B) → ¬ (A × B) and we can not even prove eequivalence without using classical axioms
+-- this one proves that (¬ A) ⊎ (¬ B) → ¬ (A × B) 
 -- ×-dual-⊎ : ∀ {A B : Set} → ¬ (A × B) ≃ (¬ A) ⊎ (¬ B)
 -- ×-dual-⊎ = record { to = λ{ x → {!   !}  } ; 
 --                     from = λ{ (inj₁ ¬A) ⟨ a , b ⟩ → ¬A a ; 
 --                               (inj₂ ¬B) ⟨ a , b ⟩ → ¬B b } ; 
 --                     from∘to = {!   !} ; 
 --                     to∘from = {!   !} }
+
+
+-- and we can not prove ¬ (A × B) → (¬ A) ⊎ (¬ B) in intuitionistic logic because it is equivalent to weak law of excluded middle
+¬×-¬dual-⊎→wem : (∀ {A B : Set} → ¬ (A × B) → (¬ A) ⊎ (¬ B)) → (∀ {A : Set} → ¬ A ⊎ ¬ ¬ A)
+¬×-¬dual-⊎→wem d = d λ{ ⟨ a , ¬a ⟩ → ¬a a }
+
+wem→¬×-¬dual-⊎ : (∀ {A : Set} → ¬ A ⊎ ¬ ¬ A) → (∀ {A B : Set} → ¬ (A × B) → (¬ A) ⊎ (¬ B))
+wem→¬×-¬dual-⊎ wem {A} {B} ¬A×B with wem {A} 
+...                             | inj₁ ¬a = inj₁ ¬a
+...                             | inj₂ ¬¬a = inj₂ λ b → ¬¬a λ a → ¬A×B ⟨ a , b ⟩
 ```
 
 
