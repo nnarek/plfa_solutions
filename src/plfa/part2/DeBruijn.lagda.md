@@ -507,7 +507,8 @@ two natural numbers, now adapted to the intrinsically-typed
 de Bruijn representation.
 
 ```agda
--- Your code goes here
+mul : ∀ {Γ} → Γ ⊢ `ℕ ⇒ `ℕ ⇒ `ℕ
+mul = μ ƛ ƛ (case (# 1) `zero (plus · # 1 · (# 3 · # 0 · # 1)))
 ```
 
 
@@ -994,7 +995,19 @@ not reduce, and its corollary, terms that reduce are not
 values.
 
 ```agda
--- Your code goes here
+V¬—→ : ∀ {Γ A} {M N : Γ ⊢ A}
+  → Value M
+    ----------
+  → ¬ (M —→ N)
+V¬—→ V-ƛ = λ ()
+V¬—→ V-zero = λ ()
+V¬—→ (V-suc v) = λ{ (ξ-suc x) → V¬—→ v x } 
+
+—→¬V : ∀ {Γ A} {M N : Γ ⊢ A}
+  → M —→ N
+    ---------
+  → ¬ Value M
+—→¬V M—→N v = V¬—→ v M—→N
 ```
 
 ## Progress
@@ -1348,7 +1361,9 @@ tedious and almost identical to the previous proof.
 Using the evaluator, confirm that two times two is four.
 
 ```agda
--- Your code goes here
+-- this proof is short but will be slow 
+mul-example : eval (gas 100) (plus · two · two) ≡ steps _ (done (V-suc (V-suc (V-suc (V-suc V-zero)))))
+mul-example = refl
 ```
 
 
